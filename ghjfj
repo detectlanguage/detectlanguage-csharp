@@ -1,0 +1,287 @@
+["
+#include<AT89X52.h>
+#define lcdport P0
+#define adcport P1
+sbit enterkey=P2^5;
+sbit downkey=P2^6;
+sbit upkey=P2^7;
+sbit rs=P2^0;		  
+sbit rdwr=P2^1;	
+sbit lcde=P2^2;
+sbit relay=P2^3;
+sbit buzzer=P2^4;
+sbit intr=P3^0;
+sbit wr=P3^1;
+sbit rd=P3^2;
+unsigned char adcdata;
+unsigned char referenceval;
+unsigned char enterkeyflag;
+unsigned char enterkeycount;
+unsigned char buzzercount;
+unsigned char buzzerentrycount;
+unsigned char loopflag=1;
+unsigned char adcdatagreaterflag;
+const unsigned char slogan1[]="Soil Irrigation ";	   	  			
+const unsigned char slogan2[]=" Contrl System  ";
+const unsigned char slogan3[]="Reference Value ";
+const unsigned char slogan4[]="  Soil Value   ";
+void delay();
+void lcdinit();
+void clr_lcd();
+void dispslogan(char*);
+void senddata(unsigned char);
+void send_command(unsigned char);
+void next_line();
+void delay1();
+unsigned char xch(unsigned char);
+void timer0() interrupt 1
+{
+buzzercount++;
+TF0=0;
+TH0=00;
+TL0=00;
+if(buzzercount==100)
+{
+buzzercount=1; 
+buzzer=0;
+ET0=0;
+TR0=0;
+}
+}
+void longdelay()
+{
+unsigned int i,j;
+for(i=0;i<100;i++)
+{
+for(j=0;j<400;j++)
+{}
+}}
+void adccontrol()
+{
+wr=0;
+delay();
+wr=1;
+delay();
+while(intr == 1 );    /* wait until the INTR signal makes  */
+                                      /* high-to-low transition indicating */
+                                         /* completion of conversion          
+/* Read the voltage value from the port */              
+               	delay();
+			  rd =0;
+				delay();
+				delay();
+				adcdata=adcport;
+                rd=1;
+			                            
+}
+void sndconvdata(unsigned char convdata)
+{
+unsigned char convdata1; 
+convdata1=convdata/10;
+senddata(convdata1/10 + 48);
+senddata(convdata1%10 + 48);
+senddata(convdata%10 + 48);
+dispslogan(" % ");
+}
+void upkeychk()
+{
+if(upkey==0)
+{
+referenceval++;
+send_command(0xc4);
+sndconvdata(referenceval);
+}}
+
+void downkeychk()
+{
+if(downkey==0)
+{
+referenceval--;
+send_command(0xc4);
+sndconvdata(referenceval);
+}}
+void enterkeychk()
+{
+if(enterkey==0)
+{
+enterkeycount++;
+if(enterkeycount==1)
+{
+enterkeyflag=1;
+clr_lcd();
+dispslogan(slogan3);
+send_command(0xc4);
+sndconvdata(referenceval);
+}}} "]
+["/**********STARTING OF THE TEMPERATURE CONTROLLER  PROJECT******************************/
+void main()
+{ 
+relay=0a;
+buzzer=0;
+TMOD=0x01;
+TH0=00;
+TL0=00; 
+EA=1;
+ET0=0;
+TR0=0;
+rdwr=0;
+delay();
+lcdinit();
+clr_lcd();
+dispslogan(slogan1);
+next_line();
+dispslogan(slogan2);
+longdelay();
+clr_lcd();"
+["/************STARTING OF THE MAIN LOOP**********************************************/
+while(enterkeycount<2)
+{
+enterkeychk();
+if(enterkeyflag)
+upkeychk();
+if(enterkeyflag)
+downkeychk();
+}
+rd=1;	 
+WR=1;
+intr=1;
+clr_lcd();
+dispslogan(slogan4);
+while(1)                                    
+{
+delay();
+adccontrol();
+delay();
+send_command(0xc4);
+sndconvdata(2*adcdata);
+if(2*adcdata>referenceval)
+{
+if(!adcdatagreaterflag)
+{
+adcdatagreaterflag=1;
+buzzerentrycount++;
+lcde=1;
+relay=0;
+if(buzzerentrycount==1)
+{
+buzzer=1;
+ET0=1; 
+TR0=1;
+}}}"]
+["/****************FUNCTION FOR SWAPPING LSBYTE AND MSBYTE OF THE DATA***************/
+ unsigned char xch(unsigned char data1)
+{
+unsigned char temp,temp1;
+temp=data1;
+data1=data1>>4;
+temp1=data1;
+data1=temp;
+data1=data1<<4;
+data1=data1|temp1;
+return(data1);
+} "]
+["/********************** INITIALIZATION   OF   LCD  ***********************************/
+ void lcdinit()
+ {
+                clr_lcd();             /*FUNCTION SET */
+                send_command(0x28);
+                delay();
+                send_command(0x28);
+                delay();
+                send_command(0x28);
+                delay();
+                send_command(0x06);			//ENTRY MODE
+                delay()
+                send_command(0x0e);			   //DISPLAY ON/OFF
+                delay(
+                clr_lcd();
+	     } "]
+                  
+["/* FUNCTION  FOR  DISPLAYING  DATA  ON  THE   LCD *************************************/
+
+void dispslogan(unsigned char *p)
+{
+  unsigned char data1;
+   while(*p)
+	{ 
+	data1=*p;   
+	senddata(data1);
+	p++;
+	}
+} "]
+
+["/***************** FUNCTION FOR SENDING LCD COMMANDS***********************************/
+ 
+ void send_command(unsigned char data1)
+   {		  
+        unsigned char newdata;
+        rs=0;
+        delay();              
+        lcde=1;
+         delay();       
+         lcdport=data1;
+		 lcde=0;
+         delay();
+         lcde=1;
+         newdata=xch(data1);
+         lcdport=newdata;
+         delay();
+         lcde=0;
+         delay();
+         rs=1;  
+} "]
+
+["/************************** FUNCTION FOR WRITING DATA ON THE LCD***********************/
+
+void senddata(unsigned char data1)
+{
+        unsigned char newdata;
+        rs=1;
+        delay();              
+        lcde=1;
+         delay();       
+         lcdport=data1;
+		  lcde=0;
+          delay();
+          lcde=1;
+          newdata=xch(data1);
+          lcdport=newdata;
+          delay();
+          lcde=0;
+          delay();
+          rs=0; 
+} "]
+                
+
+["/************ delay for 20 micro second **********************************************/
+
+void delay()
+{
+unsigned char i,j;
+for(i=0;i<80;i++)
+{
+for(j=0;j<120;j++)
+{}
+}}"]	
+
+
+
+
+["/*********** COMMAND FOR BRINGING LCD CURSOR ON SECOND LINE ***************************/  
+
+void next_line()
+{
+send_command(0xc0);
+delay();
+} "]
+
+["/**************COMMAND FOR CLEARING LCD AND BRINGING LCD CURSOR ON FIRST LINE********/
+
+void clr_lcd()
+{          
+send_command(0x01);
+delay();
+send_command(0x02);
+delay();
+} "]	 
+
