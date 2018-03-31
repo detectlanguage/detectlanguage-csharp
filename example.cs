@@ -1,9 +1,7 @@
 using RestSharp;
+using RestSharp.Authenticators;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleApplication1
 {
@@ -29,9 +27,12 @@ namespace ConsoleApplication1
         static void Main(string[] args)
         {
             var client = new RestClient("http://ws.detectlanguage.com");
+
+            // replace "demo" with your API key
+            client.Authenticator = new HttpBasicAuthenticator("demo", "");
+
             var request = new RestRequest("/0.2/detect", Method.POST);
             
-            request.AddParameter("key", "demo"); // replace "demo" with your API key
             request.AddParameter("q", "Some text to detect language");
 
             IRestResponse response = client.Execute(request);
