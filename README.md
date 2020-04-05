@@ -1,4 +1,4 @@
-# Detect Language API C# (.NET) Client
+We recommend using [official client for .NET](https://github.com/detectlanguage/detectlanguage-dotnet).
 
-Currently we do not provide official Detect Language API client for C#, but you can find [simple examples](examples/)
+If for some reason you can't use official client, you can find [simple examples](examples/)
 how to create your own client using [RestSharp](http://restsharp.org/) library 
